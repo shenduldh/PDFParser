@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+	<head>
+		<meta charset="UTF-8" />
+		<title>PDF DEMO</title>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.8.335/pdf.min.js"></script>
+		<style>
+			#box {
+				position: relative;
+			}
+			#text {
+				display: inline-block;
+				position: absolute;
+			}
+		</style>
+	</head>
+	<body>
+		<script>
+			const text_direction = {
+				ttb(ele) {
+					ele.style.writeMode = 'vertical-lr';
+				},
+				ltr(ele) {
+					ele.style.direction = 'ltr';
+				},
+				rtl(ele) {
+					ele.style.direction = 'rtl';
+				},
+			};
+
+			function readFile(file) {
+				const fileReader = new FileReader();
+				// fileReader.readAsBinaryString(file);
+				fileReader.readAsArrayBuffer(file);
+				fileReader.onprogress = a => {
+					const progress = parseInt(a.loaded / a.total) * 100 + '%';
+					document.getElementById('progress').innerText = progress;
+				};
+
+				fileReader.onload = () => {
+					const box = document.getElementById('box');
+					const scale = 2;
+					const data = fileReader.result;
+					// document.getElementById('content').innerText = content;
+					// console.log(data);
+					const loadingTask = pdfjsLib.getDocument(data);
+					loadingTask.promise.then(pdf => {
+						// pdf.getData().then(data => console.log(data));
+						pdf.getPage(1).then(page => {
+							const viewport = page.getViewport({ scale });
+							// const canvas = document.getElementById('canvas');
+							// const ctx = canvas.getContext('2d');
+							// canvas.height = viewport.height;
+							// canvas.width = viewport.width;
+							// const renderCtx = {
+							// 	canvasContext: ctx,
+							// 	viewport: viewport,
+							// };
+							// page.render(renderCtx);
+
+							box.style.width = viewport.width + 'px';
+							box.style.height = viewport.height + 'px';
+
+							page.getTextContent().then(ctn => {
+								ctn.items.forEach(item => {
+									console.log(item);
+									const rawText = item.str;
+									const span = document.createElement('span');
+									span.id = 'text';
+									span.style.width = item.width * scale + 'px';
+									span.style.height = item.height * scale + 'px';
+									span.style.fontSize = item.width / rawText.length + 'px';
+									span.style.left = item.transform[4] * scale + 'px';
+									span.style.bottom = item.transform[5] * scale + 'px';
+									span.style.fontFamily = item.fontName;
+									// span.style.transform = 'scale(0.5, 0.5)';
+									text_direction[item.dir](span);
+									// if (item.transform[1] > 0) {
+									// 	text_direction['ttb'](span);
+									// 	span.style.width = item.widthitem.height * scale + 'px';
+									// 	span.style.height = item.width * scale + 'px';
+									// }
+									box.append(span);
+									fetch('api/translate', {
+										method: 'POST',
+										body: JSON.stringify({ rawText }),
+										headers: {
+											'content-type': 'application/json',
+										},
+									})
+										.then(res => res.text())
+										.then(text => {
+											span.innerText = text;
+										});
+								});
+							});
+						});
+						// dir: 'ltr';
+						// fontName: 'Times';
+						// height: 36;
+						// str: 'Hello, World!';
+						// transform: (6)[(36, 0, 0, 36, 50, 700)];
+						// width: 199.98000000000002;
+
+						// * @typedef {Object} TextItem
+						// * @property {string} str - Text content.
+						// * @property {string} dir - Text direction: 'ttb', 'ltr' or 'rtl'.
+						// * @property {Array<any>} transform - Transformation matrix.
+						// * @property {number} width - Width in device space.
+						// * @property {number} height - Height in device space.
+						// * @property {string} fontName - Font name used by PDF.js for converted font.
+
+						// transform
+						// a: number - horizontal scaling
+						// b: number - horizontal skewing
+						// c: number - vertical skewing
+						// d: number - vertical scaling
+						// e: number - horizontal moving
+						// f: number - vertical moving
+						// a：数字--水平缩放
+						// b: 数字--水平倾斜
+						// c：数字--垂直倾斜
+						// d：数字--垂直缩放
+						// e: 数字--水平移动
+						// f: 数字--垂直移动
+						// 起点在左下角
+
+						// pdf.getMetadata().then(data => {});
+					});
+				};
+			}
+		</script>
+		<input type="file" onchange="readFile(this.files[0])" />
+		<span id="progress"></span>
+		<!-- <p id="content"></p> -->
+		<div id="box"></div>
+		<!-- <canvas id="canvas"></canvas> -->
+	</body>
+</html>

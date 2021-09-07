@@ -1,0 +1,20 @@
+{
+    "name": "hello-koa2",
+    "version": "1.0.0",
+    "main": "test.js",
+    "scripts": {
+        "start": "node --use_strict test.js"
+    },
+    "keywords": [
+        "async"
+    ],
+    "license": "Apache-2.0",
+    "dependencies": {
+        "axios": "^0.21.1",
+        "koa": "2.11.0",
+        "koa-bodyparser": "4.2.1",
+        "koa-router": "8.0.8",
+        "mime": "2.4.4",
+        "mz": "2.7.0"
+    }
+}
